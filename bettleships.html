@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<body>
+<p>BATTLESHIP GAME</p>
+
+<br />
+<canvas id="playGround" width="610" height="300"></canvas>
+
+<p id="output">NORINT PRADETI PARASYKITE START </p>
+<input id="inputText"><button type="button" onclick="inputCommand()">EXECUTE</button>
+<p2 id="winner"></p2>
+
+<script>
+let playerShipMatrix = new Array(9);
+let computerShipMatrix = new Array(9);
+let hitMatrix = new Array(9);
+
+winnerOutputToWindow("");
+fillBlank();
+drawRects(playerShipMatrix, hitMatrix);
+
+let playerShips = new Array(5);
+
+let playerHit = false;
+let computerHit = false;
+
+let gameStarted = false;
+let canBattleBegin = false;
+let battleBegin = false;
+
+let playerHitCounter = 0;
+let computerHitCounter = 0;
+
+function game(input){
+	if (!inputValid(input)) {
+		return;
+	}
+    if (input == "START") {
+		gameStarted = true; 
+        computerShips();    
+        outputToWindow("PASTATYKITE LAIVUS SU PLACE KOMANDA");
+        drawRects(playerShipMatrix, hitMatrix);       
+    } else if (input.startsWith("PLACE") && !battleBegin) { 
+	    let x = Number(input.charAt(6));
+        let y = Number(input.charAt(7));
+        let size = Number(input.charAt(8));
+        let direction = input.charAt(9);
+
+        if (isAllShipsInPlace()) {
+            outputToWindow("VISI LAIVAI PRIDETI RASYKITE BEGIN");
+        } else {
+            placeShip(x, y, size, direction, playerShipMatrix);
+        }
+        drawRects(playerShipMatrix, hitMatrix); //computerShipMatrix);
+
+    } else if (input == "BEGIN" && canBattleBegin) { 
+        battleBegin = true;
+        outputToWindow("SAUKITE SU SHOOT KOMANDA");
+
+    } else if (input.startsWith("SHOOT") && battleBegin) { 
+        let x = Number(input.charAt(6));
+        let y = Number(input.charAt(7));
+
+        playerHit = isHit(x, y, computerShipMatrix);
+        playerHits(x, y, computerShipMatrix);
+        
+        if (playerHit) {
+            outputToWindow("PATAIKETE");
+            playerHitCounter += 1;
+            if (playerHitCounter >= 15) {
+                winnerOutputToWindow("JUS LAIMEJOTE");
+                end();
+                return;
+            }
+        } else {
+            outputToWindow("NEPATAIKETE"); 
+            computerHit = computerShot();
+            while (computerHit) {
+                computerHit = computerShot();
+                computerHitCounter += 1;
+                if (computerHitCounter >= 15) {
+                    winnerOutputToWindow("KOMPIUTERIS LAIMEJO");
+                    end();
+                    return;
+                }
+                outputToWindow("KOMPIUTERIS PATAIKE"); 
+            }
+            outputToWindow("KOMPIUTERIS NEPATAIKE SAUKITE");    
+        }
+        drawRects(playerShipMatrix, hitMatrix);  
+
+    } else if (input == "END") { 
+        end();
+        winnerOutputToWindow("");
+        return;
+	} else {
+        outputToWindow("BLOGA KOMANDA");
+		return;
+    }
+}
+
+function inputValid(input) {
+	if (input != "START" && !gameStarted) {
+        outputToWindow("START");
+		return false;
+    }
+	return true;
+}
+
+function computerShips() {
+    for (let i = 0; i <= 9; i++) {
+        computerShipMatrix[i] = new Array(9);
+        for (let z = 0; z <= 9; z++) {
+            computerShipMatrix[i][z] = "O";
+        }
+    } 
+    computerShipMatrix[6][2] = "S1";
+
+    computerShipMatrix[1][1] = "S2";
+    computerShipMatrix[1][2] = "S2";
+
+    computerShipMatrix[3][5] = "S3";
+    computerShipMatrix[4][5] = "S3";
+    computerShipMatrix[5][5] = "S3";
+
+    computerShipMatrix[8][4] = "S4";
+    computerShipMatrix[8][5] = "S4";
+    computerShipMatrix[8][6] = "S4";
+    computerShipMatrix[8][7] = "S4";
+
+    computerShipMatrix[1][9] = "S5";
+    computerShipMatrix[2][9] = "S5";
+    computerShipMatrix[3][9] = "S5";
+    computerShipMatrix[4][9] = "S5";
+    computerShipMatrix[5][9] = "S5";
+
+}
+
+function outputToWindow(messege) {
+    document.getElementById("output").innerHTML = messege;
+}
+function winnerOutputToWindow(messege) {
+    document.getElementById("winner").innerHTML = messege;
+}
+
+function inputCommand() {
+    let inputText;
+    inputText = document.getElementById("inputText").value;
+    game(inputText);
+}
+
+function placeShip(x, y, s, d, matrix) {
+    if (!isShipValid(x, y, s, d)) {
+        outputToWindow("NEGALIMA PASTATYTI LAIVO");
+    } else if (doPlayerHaveShip(s)) {
+        outputToWindow("TOKS LAIVAS JAU YRA PRIDEKITE KITA");
+    } else if (isShipCrossed(x, y, s, d, matrix)) {
+        outputToWindow("LAIVAI KERTASI");
+    } else {
+        if (d == "R") {          
+            for (let i = 0; i < s; i++) {
+                playerShipMatrix[y][x+i] = "S" + s;
+            }
+        } 
+        if (d == "D") {
+            for (let i = 0; i < s; i++) {
+                playerShipMatrix[y+i][x] = "S" + s;
+            }
+        }
+        playerShips[s] = 1;
+        if (isAllShipsInPlace()) {
+            outputToWindow("VISI LAIVAI PRIDETI RASYKITE BEGIN");
+        } else {
+            outputToWindow("LAIVAS PRIDETAS PRIDEKITE KITA");
+        }
+    }
+}
+function isShipValid(x, y, s, d) {
+    if (!(d != "R" || d != "D")) {
+        return false;
+    } else if (x >= 10 || x <= -1 || y >= 10 || y <= -1 || s >= 6 || s <= 0) {
+        return false;
+    } else if (d == "R" && x >= 11-s ) {
+        return false;
+    } else if (d == "D" && y >= 11-s ) {
+        return false;
+    } else {
+        return true;
+    }
+}
+function isShipCrossed(x, y, s, d, matrix) {
+    if (d == "R") {
+        for(let i = 0; i < s; i++) {
+            if (matrix[y][x+i] != "O") {
+                return true;
+            }
+        }
+    } else if (d == "D") {
+        for (let i = 0; i < s; i++) {
+            if (matrix[y+i][x] != "O") {
+                return true;
+            }
+        }
+    } else {
+        return false;
+    }
+}
+function isHit(x, y, matrix) {
+    if (matrix[y][x] == "O" || matrix[y][x] == "X" || matrix[y][x] == "M") {
+        return false;
+    } else {
+        return true;
+    }
+}
+function doPlayerHaveShip(s) {
+    if (playerShips[s] == 1){
+        return true;
+    }
+    return false;
+}
+
+function isAllShipsInPlace() {
+    for (let i = 1; i <= 5; i++) {
+        if (playerShips[i] != 1) {
+            return false
+        }
+    }
+    canBattleBegin = true;
+    return true;
+}
+
+function computerShot() {
+    let x = Math.floor(Math.random() * 10);
+    let y = Math.floor(Math.random() * 10);
+    // console.log(x + " " + y);
+    computerHit = isHit(x, y, playerShipMatrix);
+    computerHits(x, y, playerShipMatrix);
+    return computerHit;
+}
+function drawRects(matrix, seccondMatrix) {
+    var c = document.getElementById("playGround");
+    var ctx = c.getContext("2d");
+
+    for (let i = 0; i <= 9 ; i++){
+        for (let j = 0; j <= 9 ; j++){
+            if (matrix[i][j] == "M") {
+                ctx.fillStyle="#696969";
+                ctx.fillRect(j * 30 , i * 30, 30, 30);
+            } else if (matrix[i][j] == "X") {
+                ctx.fillStyle="#FF0000";
+                ctx.fillRect(j * 30, i * 30, 30, 30);
+            } else if (matrix[i][j].startsWith("S")) {
+                ctx.fillStyle="#2F4F4F";
+                ctx.fillRect(j * 30, i * 30, 30, 30);
+            } else {
+                ctx.fillStyle="#C0C0C0";
+                ctx.fillRect(j * 30, i * 30, 30, 30);
+            }
+        }
+    }
+    for (let i = 0; i <= 9 ; i++){
+        for (let j = 0; j <= 9 ; j++){
+            if (seccondMatrix[i][j] == "M") {
+                ctx.fillStyle="#696969";
+                ctx.fillRect(310 + (j * 30) , i * 30, 30, 30);
+            } else if (seccondMatrix[i][j] == "X") {
+                ctx.fillStyle="#FF0000";
+                ctx.fillRect(310 + (j * 30), i * 30, 30, 30);
+            } else {
+                ctx.fillStyle="#C0C0C0";
+                ctx.fillRect(310 + (j * 30), i * 30, 30, 30);
+            }
+        }
+    }
+}
+function playerHits(x, y, matrix) {
+    if (matrix[y][x] == "O") {
+        hitMatrix[y][x] = "M"
+    } else {
+        hitMatrix[y][x] = "X"
+    }
+}
+function computerHits(x, y, matrix) {
+    if (matrix[y][x] == "O" || matrix[y][x] == "M") {
+        playerShipMatrix[y][x] = "M";
+    } else {
+        playerShipMatrix[y][x] = "X";
+    }
+}
+function fillBlank(){
+    playerShipMatrix = new Array(9);
+    computerShipMatrix = new Array(9);
+    hitMatrix = new Array(9);
+    for (let i = 0; i <= 9; i++) {
+        playerShipMatrix[i] = new Array(9);
+        computerShipMatrix[i] = new Array(9);
+        hitMatrix[i] = new Array(9);
+        for (let z = 0; z <= 9; z++) {
+            playerShipMatrix[i][z] = "O";
+            computerShipMatrix[i][z] = "O";
+            hitMatrix[i][z] = "O";
+        }
+    } 
+}
+function end() {
+    playerShips = new Array(5);
+    playerHitCounter = 0;
+    computerHitCounter = 0;
+    outputToWindow("PABAIGA");
+    gameStarted = false;
+    battleBegin = false;
+    fillBlank();
+    drawRects(playerShipMatrix, hitMatrix);
+    playerHit = false;
+    letcomputerHit = false;
+    return;
+}
+</script>
+
+</body>
+</html> 
