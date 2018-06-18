@@ -8,7 +8,23 @@
 
 <p id="output">NORĖDAMI PRADĖTI ŽAIDIMĄ RAŠYKITE <strong>START</strong></p>
 <input id="inputText"><button type="button" onclick="inputCommand()">VYKDYTI</button>
-<p2 id="winner"></p2>
+
+<pre>
+    Pagrindinės žaidimo komandos:
+
+    * Norėdami pradėti žaidimą rašykite "START"
+    * Norėda statyti laivą rašykite "PLACE 123R"
+         - [1] laivo x kordinatė (0-9)
+         - [2] laivo y kordinatė (0-9)
+         - [3] laivo dydis (1-5)
+         - [R] laivo pastatymo kryptis (R - į dešinę, D - į apačią)
+    * Pastačius laivus, norėdami pradėti mušį rašykite "BEGIN"
+    * Norėdami šauti rašykite "SHOOT 12"
+         - [1] šuvio x kordinatė (0-9)
+         - [2] šuvio y kordinatė (0-9) 
+    * Norėdami baigti žaidimą rašykite "END"
+</pre>
+
 
 <script>
 let playerShipMatrix = new Array(9);
@@ -132,9 +148,6 @@ function computerShips() {
 
 function outputToWindow(messege) {
     document.getElementById("output").innerHTML = messege;
-}
-function winnerOutputToWindow(messege) {
-    document.getElementById("winner").innerHTML = messege;
 }
 
 function inputCommand() {
