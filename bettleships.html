@@ -6,16 +6,17 @@
 <br />
 <canvas id="playGround" width="610" height="300"></canvas>
 
-<p id="output">NORINT PRADETI PARASYKITE START </p>
-<input id="inputText"><button type="button" onclick="inputCommand()">EXECUTE</button>
+<p id="output">NORĖDAMI PRADĖTI ŽAIDIMĄ RAŠYKITE <strong>START</strong></p>
+<input id="inputText"><button type="button" onclick="inputCommand()">VYKDYTI</button>
 <p2 id="winner"></p2>
 
 <script>
 let playerShipMatrix = new Array(9);
 let computerShipMatrix = new Array(9);
 let hitMatrix = new Array(9);
+let computerShotArray = new Array(99);
+let whichComputerHit = 0;
 
-winnerOutputToWindow("");
 fillBlank();
 drawRects(playerShipMatrix, hitMatrix);
 
@@ -37,8 +38,10 @@ function game(input){
 	}
     if (input == "START") {
 		gameStarted = true; 
-        computerShips();    
-        outputToWindow("PASTATYKITE LAIVUS SU PLACE KOMANDA");
+        winnerOutputToWindow("");
+        computerShips();
+        computerHitGenerator();    
+        outputToWindow("PASTATYKITE LAIVUS SU <strong>PLACE</strong> KOMANDA");
         drawRects(playerShipMatrix, hitMatrix);       
     } else if (input.startsWith("PLACE") && !battleBegin) { 
 	    let x = Number(input.charAt(6));
@@ -47,15 +50,15 @@ function game(input){
         let direction = input.charAt(9);
 
         if (isAllShipsInPlace()) {
-            outputToWindow("VISI LAIVAI PRIDETI RASYKITE BEGIN");
+            outputToWindow("VISI LAIVAI PRIDĖTI RAŠYKITE <strong>BEGIN</strong> NORĖDAMI PRADĖTI MŪŠĮ");
         } else {
             placeShip(x, y, size, direction, playerShipMatrix);
         }
-        drawRects(playerShipMatrix, hitMatrix); //computerShipMatrix);
+        drawRects(playerShipMatrix, hitMatrix);
 
     } else if (input == "BEGIN" && canBattleBegin) { 
         battleBegin = true;
-        outputToWindow("SAUKITE SU SHOOT KOMANDA");
+        outputToWindow("ŠAUKITE SU <strong>SHOOT</strong> KOMANDA");
 
     } else if (input.startsWith("SHOOT") && battleBegin) { 
         let x = Number(input.charAt(6));
@@ -65,33 +68,31 @@ function game(input){
         playerHits(x, y, computerShipMatrix);
         
         if (playerHit) {
-            outputToWindow("PATAIKETE");
+            outputToWindow("PATAIKĖTE ŠAUKITE VĖL");
             playerHitCounter += 1;
             if (playerHitCounter >= 15) {
-                winnerOutputToWindow("JUS LAIMEJOTE");
+                outputToWindow("JŪS LAIMĖJOTE, NORĖDAMI PRADĖTI KITĄ ŽAIDIMĄ RAŠYKITE <strong>START</strong>");
                 end();
                 return;
             }
         } else {
-            outputToWindow("NEPATAIKETE"); 
+            outputToWindow("NEPATAIKĖTE"); 
             computerHit = computerShot();
             while (computerHit) {
                 computerHit = computerShot();
                 computerHitCounter += 1;
                 if (computerHitCounter >= 15) {
-                    winnerOutputToWindow("KOMPIUTERIS LAIMEJO");
+                    outputToWindow("KOMPIUTERIS LAIMĖJO, NORĖDAMI PRADĖTI KITĄ ŽAIDIMĄ RAŠYKITE <strong>START</strong>");
                     end();
                     return;
                 }
-                outputToWindow("KOMPIUTERIS PATAIKE"); 
             }
-            outputToWindow("KOMPIUTERIS NEPATAIKE SAUKITE");    
+            outputToWindow("KOMPIUTERIS ŠOVĖ ŠAUKITE");    
         }
         drawRects(playerShipMatrix, hitMatrix);  
 
     } else if (input == "END") { 
         end();
-        winnerOutputToWindow("");
         return;
 	} else {
         outputToWindow("BLOGA KOMANDA");
@@ -101,7 +102,7 @@ function game(input){
 
 function inputValid(input) {
 	if (input != "START" && !gameStarted) {
-        outputToWindow("START");
+        outputToWindow("NORĖDAMI PRADĖTI ŽAIDIMĄ RAŠYKITE <strong>START</strong>");
 		return false;
     }
 	return true;
@@ -144,9 +145,9 @@ function inputCommand() {
 
 function placeShip(x, y, s, d, matrix) {
     if (!isShipValid(x, y, s, d)) {
-        outputToWindow("NEGALIMA PASTATYTI LAIVO");
+        outputToWindow("TAIP LAIVO STATYTI NEGALIMA");
     } else if (doPlayerHaveShip(s)) {
-        outputToWindow("TOKS LAIVAS JAU YRA PRIDEKITE KITA");
+        outputToWindow("TOKS LAIVAS JAU YRA, PRIDĖKITE KITĄ");
     } else if (isShipCrossed(x, y, s, d, matrix)) {
         outputToWindow("LAIVAI KERTASI");
     } else {
@@ -162,9 +163,9 @@ function placeShip(x, y, s, d, matrix) {
         }
         playerShips[s] = 1;
         if (isAllShipsInPlace()) {
-            outputToWindow("VISI LAIVAI PRIDETI RASYKITE BEGIN");
+            outputToWindow("VISI LAIVAI PRIDĖTI, RAŠYKITE <strong>BEGIN</strong>");
         } else {
-            outputToWindow("LAIVAS PRIDETAS PRIDEKITE KITA");
+            outputToWindow("LAIVAS PRIDĖTAS, PRIDĖKITE KITĄ");
         }
     }
 }
@@ -223,9 +224,9 @@ function isAllShipsInPlace() {
 }
 
 function computerShot() {
-    let x = Math.floor(Math.random() * 10);
-    let y = Math.floor(Math.random() * 10);
-    // console.log(x + " " + y);
+    x = computerShotArray[whichComputerHit][0];
+    y = computerShotArray[whichComputerHit][1];
+    whichComputerHit += 1;
     computerHit = isHit(x, y, playerShipMatrix);
     computerHits(x, y, playerShipMatrix);
     return computerHit;
@@ -280,6 +281,22 @@ function computerHits(x, y, matrix) {
         playerShipMatrix[y][x] = "X";
     }
 }
+function computerHitGenerator() {
+    let k = 0;
+    for (let i = 0; i <= 9; i++){
+        for (let j = 0; j <= 9; j++) {
+           computerShotArray[k] = new Array (i,j); 
+           k += 1;
+        }       
+    }
+    for (var i = computerShotArray.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = computerShotArray[i];
+        computerShotArray[i] = computerShotArray[j];
+        computerShotArray[j] = temp;
+    }
+
+}
 function fillBlank(){
     playerShipMatrix = new Array(9);
     computerShipMatrix = new Array(9);
@@ -297,9 +314,10 @@ function fillBlank(){
 }
 function end() {
     playerShips = new Array(5);
+    computerShotArray = new Array(99);
+    whichComputerHit = 0;
     playerHitCounter = 0;
     computerHitCounter = 0;
-    outputToWindow("PABAIGA");
     gameStarted = false;
     battleBegin = false;
     fillBlank();
